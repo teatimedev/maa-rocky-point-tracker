@@ -66,9 +66,15 @@ Copy `.env.local.example` and fill values:
 ## Supabase bootstrap
 
 1. Create project in Supabase.
-2. Run `db/schema.sql` in SQL Editor.
-3. Create public storage bucket: `apt-images`.
-4. Add env vars in Vercel + GitHub Actions Secrets.
+2. Add env vars locally (`SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, optional `SUPABASE_DB_URL`).
+3. Run automated setup helper:
+
+```bash
+./scripts/setup-supabase.sh
+```
+
+4. Create public storage bucket: `apt-images`.
+5. Add env vars in Vercel + GitHub Actions Secrets.
 
 ## Scraper usage
 
