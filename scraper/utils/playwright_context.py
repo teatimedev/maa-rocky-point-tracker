@@ -101,13 +101,17 @@ async def upload_block_snapshot(supabase, source_name: str, page: Page) -> str |
         html = await page.content()
 
         # Upload image
-        supabase.storage.from_("apt-images").upload(path, screenshot, {"content-type": "image/png"})
+        supabase.storage.from_("apt-images").upload(
+            path,
+            screenshot,
+            {"content-type": "image/png", "upsert": True},
+        )
 
         # Upload HTML as well
         supabase.storage.from_("apt-images").upload(
             path.replace(".png", ".html"),
             html.encode(),
-            {"content-type": "text/html"},
+            {"content-type": "text/html", "upsert": True},
         )
 
         return path

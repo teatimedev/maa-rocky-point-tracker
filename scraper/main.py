@@ -8,13 +8,14 @@ from datetime import UTC, datetime
 from typing import Any
 
 import structlog
-from supabase import Client, create_client
+from supabase import Client
 
 from scrapers.apartments_com import ApartmentsComScraper
 from scrapers.base import ScrapedUnit
 from scrapers.maa_scraper import MAAScraper
 from scrapers.normalizer import normalize_units, summarize_by_source
 from utils.feature_parser import parse_feature_flags
+from utils.supabase_client import get_supabase_client
 
 logger = structlog.get_logger(__name__)
 
@@ -24,13 +25,6 @@ class PersistStats:
     new_units: int = 0
     price_changes: int = 0
 
-
-def get_supabase_client() -> Client | None:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not url or not key:
-        return None
-    return create_client(url, key)
 
 
 def slugify(value: str) -> str:

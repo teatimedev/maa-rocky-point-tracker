@@ -30,7 +30,7 @@ class ApartmentsComScraper:
             html = (await page.content()).lower()
             if "access denied" in title or "cloudflare" in title or "you have been blocked" in html:
                 from utils.playwright_context import upload_block_snapshot
-                from main import get_supabase_client
+                from utils.supabase_client import get_supabase_client
                 sb = get_supabase_client()
                 if sb:
                     await upload_block_snapshot(sb, self.source_name, page)
