@@ -88,6 +88,16 @@ async def browser_page() -> tuple[BrowserContext, Page]:
             },
         )
 
+        async def _block_heavy(route, request):  # type: ignore[no-untyped-def]
+            # Proxy bandwidth saver: we don't need images/media/fonts for scraping.
+            # Keep scripts + XHR so the app can still load availability data.
+            if request.resource_type in {"image", "media", "font"}:
+                await route.abort()
+            else:
+                await route.continue_()
+
+        await context.route("**/*", _block_heavy)
+
         page = await context.new_page()
         await Stealth().apply_stealth_async(page)
 
