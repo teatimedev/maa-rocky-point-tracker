@@ -5,6 +5,7 @@ import random
 import re
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from urllib.parse import unquote, urlsplit
 
 from playwright.async_api import BrowserContext, Page, async_playwright
 from playwright_stealth import Stealth
@@ -30,13 +31,19 @@ def _proxy_from_env() -> ProxyConfig | None:
 
     proxy_url = os.getenv("PROXY_URL") or os.getenv("SCRAPER_PROXY_URL")
     if proxy_url:
-        # Parse http(s)://user:pass@host:port
-        match = re.match(r"^(https?://)(?:(.+?):(.+?)@)?(.+)$", proxy_url.strip())
-        if match:
-            scheme, username, password, host = match.groups()
-            server = f"{scheme}{host}"
+        # Supports e.g. http(s)/socks5://user:pass@host:port
+        # Use urlsplit so percent-encoding in creds works.
+        parsed = urlsplit(proxy_url.strip())
+        if parsed.scheme and parsed.hostname:
+            server = f"{parsed.scheme}://{parsed.hostname}"
+            if parsed.port:
+                server += f":{parsed.port}"
+            username = unquote(parsed.username) if parsed.username else None
+            password = unquote(parsed.password) if parsed.password else None
             return ProxyConfig(server=server, username=username, password=password)
-        return ProxyConfig(server=proxy_url)
+
+        # Fallback: treat as Playwright proxy.server string
+        return ProxyConfig(server=proxy_url.strip())
 
     server = os.getenv("PROXY_SERVER") or os.getenv("SCRAPER_PROXY_SERVER")
     if not server:
