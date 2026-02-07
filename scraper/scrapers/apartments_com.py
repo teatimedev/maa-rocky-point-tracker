@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import re
 
-from playwright.async_api import async_playwright
-
 from scrapers.base import ScrapedUnit
 from utils.parsing import normalize_sq_ft, parse_price
+from utils.playwright_context import close_browser, launch_browser
 
 
 def _parse_beds_and_baths(text: str) -> tuple[int, float]:
@@ -23,9 +22,9 @@ class ApartmentsComScraper:
     async def scrape(self) -> list[ScrapedUnit]:
         units: list[ScrapedUnit] = []
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
+        browser = None
+        try:
+            browser, _context, page = await launch_browser()
             await page.goto(self.source_url, wait_until="domcontentloaded")
             await page.wait_for_timeout(3000)
 
@@ -65,6 +64,8 @@ class ApartmentsComScraper:
                     )
                 )
 
-            await browser.close()
+        finally:
+            if browser is not None:
+                await close_browser(browser)
 
         return units

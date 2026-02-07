@@ -3,11 +3,11 @@ from __future__ import annotations
 import re
 from typing import Iterable
 
-from playwright.async_api import Locator, async_playwright
-from playwright_stealth import Stealth
+from playwright.async_api import Locator
 
 from scrapers.base import ScrapedUnit
 from utils.parsing import normalize_sq_ft, parse_price
+from utils.playwright_context import close_browser, launch_browser
 
 
 def _extract_first(patterns: Iterable[str], text: str) -> str | None:
@@ -94,11 +94,9 @@ class MAAScraper:
     async def scrape(self) -> list[ScrapedUnit]:
         units: list[ScrapedUnit] = []
 
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context()
-            page = await context.new_page()
-            await Stealth().apply_stealth_async(page)
+        browser = None
+        try:
+            browser, _context, page = await launch_browser()
 
             await page.goto(self.source_url, wait_until="domcontentloaded")
             await page.wait_for_timeout(4000)
@@ -147,6 +145,8 @@ class MAAScraper:
                     )
                 )
 
-            await browser.close()
+        finally:
+            if browser is not None:
+                await close_browser(browser)
 
         return units
