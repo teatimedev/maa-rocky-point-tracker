@@ -201,6 +201,11 @@ async def run_scrape() -> tuple[dict[str, int], str]:
             all_units.extend(units)
             successful_sources += 1
         except Exception as exc:  # noqa: BLE001
+            if "blocked" in str(exc).lower() or "closed" in str(exc).lower():
+                # The scraper likely had a page object before it failed
+                # but in this architecture, the context manager closed it.
+                # We will add diagnostic capture inside the scrapers themselves next.
+                pass
             message = f"{scraper.source_name}: {exc}"
             source_errors.append(message)
             logger.exception("source_scrape_failed", source=scraper.source_name, error=str(exc))

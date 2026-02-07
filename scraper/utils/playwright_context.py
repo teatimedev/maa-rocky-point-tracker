@@ -88,3 +88,28 @@ async def browser_page() -> tuple[BrowserContext, Page]:
             yield context, page
         finally:
             await browser.close()
+
+
+async def upload_block_snapshot(supabase, source_name: str, page: Page) -> str | None:
+    """Take a snapshot of the blocked page and upload to Supabase for debugging."""
+    try:
+        from datetime import datetime
+
+        now = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = f"debug/block_{source_name}_{now}.png"
+        screenshot = await page.screenshot(full_page=True)
+        html = await page.content()
+
+        # Upload image
+        supabase.storage.from_("apt-images").upload(path, screenshot, {"content-type": "image/png"})
+
+        # Upload HTML as well
+        supabase.storage.from_("apt-images").upload(
+            path.replace(".png", ".html"),
+            html.encode(),
+            {"content-type": "text/html"},
+        )
+
+        return path
+    except Exception:
+        return None

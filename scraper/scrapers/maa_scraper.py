@@ -101,6 +101,11 @@ class MAAScraper:
             title = (await page.title()).lower()
             html = (await page.content()).lower()
             if "cloudflare" in title or "you have been blocked" in html:
+                from utils.playwright_context import upload_block_snapshot
+                from main import get_supabase_client
+                sb = get_supabase_client()
+                if sb:
+                    await upload_block_snapshot(sb, self.source_name, page)
                 raise RuntimeError("maa_blocked_by_cloudflare")
 
             cards = await _find_cards(page)

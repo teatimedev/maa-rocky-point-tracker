@@ -29,6 +29,11 @@ class ApartmentsComScraper:
             title = (await page.title()).lower()
             html = (await page.content()).lower()
             if "access denied" in title or "cloudflare" in title or "you have been blocked" in html:
+                from utils.playwright_context import upload_block_snapshot
+                from main import get_supabase_client
+                sb = get_supabase_client()
+                if sb:
+                    await upload_block_snapshot(sb, self.source_name, page)
                 raise RuntimeError("apartments_com_blocked")
 
             cards = page.locator("article, [class*='pricing'], [class*='unitCard']")
