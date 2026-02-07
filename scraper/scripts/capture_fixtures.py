@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from utils.playwright_context import close_browser, launch_browser
+from utils.playwright_context import browser_page
 
 SOURCES = {
     "maa_rocky_point_page": "https://www.maac.com/florida/tampa/maa-rocky-point/",
@@ -16,10 +16,7 @@ async def capture() -> None:
     fixtures_dir = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
     fixtures_dir.mkdir(parents=True, exist_ok=True)
 
-    browser = None
-    try:
-        browser, context, page = await launch_browser()
-
+    async with browser_page() as (_context, page):
         for name, url in SOURCES.items():
             await page.goto(url, wait_until="domcontentloaded", timeout=120_000)
             await page.wait_for_timeout(5000)
@@ -28,10 +25,6 @@ async def capture() -> None:
             (fixtures_dir / f"{name}.html").write_text(html, encoding="utf-8")
             await page.screenshot(path=str(fixtures_dir / f"{name}.png"), full_page=True)
             print(f"Captured fixture: {name}")
-
-    finally:
-        if browser is not None:
-            await close_browser(browser)
 
 
 if __name__ == "__main__":

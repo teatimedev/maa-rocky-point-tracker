@@ -4,7 +4,7 @@ import re
 
 from scrapers.base import ScrapedUnit
 from utils.parsing import normalize_sq_ft, parse_price
-from utils.playwright_context import close_browser, launch_browser
+from utils.playwright_context import browser_page
 
 
 def _parse_beds_and_baths(text: str) -> tuple[int, float]:
@@ -22,9 +22,7 @@ class ApartmentsComScraper:
     async def scrape(self) -> list[ScrapedUnit]:
         units: list[ScrapedUnit] = []
 
-        browser = None
-        try:
-            browser, _context, page = await launch_browser()
+        async with browser_page() as (_context, page):
             await page.goto(self.source_url, wait_until="domcontentloaded")
             await page.wait_for_timeout(3000)
 
@@ -63,9 +61,5 @@ class ApartmentsComScraper:
                         source_url=self.source_url,
                     )
                 )
-
-        finally:
-            if browser is not None:
-                await close_browser(browser)
 
         return units

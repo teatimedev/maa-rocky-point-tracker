@@ -7,7 +7,7 @@ from playwright.async_api import Locator
 
 from scrapers.base import ScrapedUnit
 from utils.parsing import normalize_sq_ft, parse_price
-from utils.playwright_context import close_browser, launch_browser
+from utils.playwright_context import browser_page
 
 
 def _extract_first(patterns: Iterable[str], text: str) -> str | None:
@@ -94,10 +94,7 @@ class MAAScraper:
     async def scrape(self) -> list[ScrapedUnit]:
         units: list[ScrapedUnit] = []
 
-        browser = None
-        try:
-            browser, _context, page = await launch_browser()
-
+        async with browser_page() as (_context, page):
             await page.goto(self.source_url, wait_until="domcontentloaded")
             await page.wait_for_timeout(4000)
 
@@ -138,15 +135,14 @@ class MAAScraper:
                         sq_ft=sq_ft,
                         price=price,
                         available_date=available_date,
-                        move_in_special=_extract_first([r"(\d+\s*weeks?\s*free)", r"(look-and-lease[^\n\r]*)"], card_text),
+                        move_in_special=_extract_first(
+                            [r"(\d+\s*weeks?\s*free)", r"(look-and-lease[^\n\r]*)"],
+                            card_text,
+                        ),
                         feature_tags=_parse_feature_tags(card_text),
                         source=self.source_name,
                         source_url=self.source_url,
                     )
                 )
-
-        finally:
-            if browser is not None:
-                await close_browser(browser)
 
         return units

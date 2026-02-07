@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 import random
 import re
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
-from playwright.async_api import Browser, BrowserContext, Page, async_playwright
+from playwright.async_api import BrowserContext, Page, async_playwright
 from playwright_stealth import Stealth
 
 from config import USER_AGENTS
@@ -48,8 +49,12 @@ def _proxy_from_env() -> ProxyConfig | None:
     )
 
 
-async def launch_browser() -> tuple[Browser, BrowserContext, Page]:
-    """Launch Chromium with stealth + random UA + optional proxy."""
+@asynccontextmanager
+async def browser_page() -> tuple[BrowserContext, Page]:
+    """Async context manager providing (context, page).
+
+    Keeps Playwright alive for the lifetime of the context manager.
+    """
 
     proxy = _proxy_from_env()
     user_agent = random.choice(USER_AGENTS)
@@ -79,8 +84,7 @@ async def launch_browser() -> tuple[Browser, BrowserContext, Page]:
         page = await context.new_page()
         await Stealth().apply_stealth_async(page)
 
-        return browser, context, page
-
-
-async def close_browser(browser: Browser) -> None:
-    await browser.close()
+        try:
+            yield context, page
+        finally:
+            await browser.close()
